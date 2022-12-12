@@ -9,7 +9,6 @@
 #define KEYINPUT P3
 #define BITSELECT P2
 #define LEDOUT P0
-#define BEEP P2^0
 #define count10ms 256-9
 
 // typedef struct alarm{// alarm struct 
@@ -94,7 +93,7 @@ const uchar C_fixtime = 0x00;// wmode_clock correction factor
 
 uchar R_10ms_counter = 0; // 10ms counter powered by T0 
 uchar R_galarm_isOn = 0; //global alarm enable flag
-uchar R_keypressed = -1; // storge key pressed -1 for no key was pressed 
+E_keycls R_keypressed = Nak; // storge key pressed -1 for no key was pressed 
 uchar R_countkeydown = 0; // count keydown to ease
 uchar R_ledbuffer[4] = {0}; // 4bit LED buffer 
 E_keycls R_key = Nak;// final key cls
@@ -120,6 +119,8 @@ uchar R_tpressed_count = 0; // *Unused start/stop or set zero
 uchar R_tisON = 0;// control timer
 // uchar T_ex_seconds = 0; // external counter for seconds
 
+sbit BEEP = P2^0;
+
 int main(){
     init();
     //R_displaymode = M_S;
@@ -133,9 +134,12 @@ int main(){
         if(R_aisON && R_aMinutes == R_cMinutes && R_aHours == R_cHours)   R_aonAlarm=1;
 		
         switch(R_workmode){
-
+            case wmode_clock: R_displaymode = H_M; break;
+            case wmode_timer: R_displaymode = Timer;   break;
+            case wmode_alram_adjust: R_adjustpos = ad_Nad; break;
+            case wmode_clock_adjust: R_adjustpos = ad_Nad; break;
         }
-
+        Input_key_map();
         Display_Display();
 
     }
@@ -210,7 +214,7 @@ void Input_key_map(){
         case wmode_clock:
             switch (R_key)
             {
-                case key_f1:    R_displaymode == H_M?M_S:H_M;   break;
+                case key_f1:    R_displaymode = R_displaymode == H_M?M_S:H_M;   break;
                 case key_f2:    R_workmode = wmode_clock_adjust;    break;
                 case key_f3:
                     if(R_aonAlarm){
@@ -236,7 +240,7 @@ void Input_key_map(){
             switch (R_key)
             {
                 case key_f1:    R_adjustpos = Adjalarm_change_adj(R_adjustpos); break;
-                case key_f2:    Adjalarm_adj_up()break;
+                case key_f2:    Adjalarm_adj_up();	break;
                 case key_f3:    Adjalarm_change_state();break;
                 case key_f4:    R_workmode = wmode_clock;   break;
                 
@@ -272,9 +276,9 @@ void Clock_lint_time(){
     if(R_cHours >= 24){
         R_cHours = 0;
     }
-    R_cSeconds < 0?0:R_cSeconds;
-    R_cMinutes < 0?0:R_cMinutes;
-    R_cHours < 0?0:R_cHours;
+    R_cSeconds = R_cSeconds < 0?0:R_cSeconds;
+    R_cMinutes = R_cMinutes< 0?0:R_cMinutes;
+    R_cHours = R_cHours < 0?0:R_cHours;
 }
 
 /**
@@ -284,7 +288,8 @@ void Clock_lint_time(){
  * @return E_adjust_pos 
  */
 E_adjust_pos Adjclock_change_adj(E_adjust_pos cadj_pos){
-    ++cadj_pos > ad_S?ad_H:cadj_pos;
+    cadj_pos++;
+    cadj_pos = cadj_pos > ad_S?ad_H:cadj_pos;
     if(cadj_pos >= ad_M) R_displaymode = M_S;
     if(cadj_pos < ad_M) R_displaymode = H_M;
 
@@ -326,6 +331,7 @@ void Adjalarm_adj_up(){
         case ad_H: R_aHours++;break;
         case ad_M: R_aMinutes++;break;
     }
+    Adjalarm_lint_alarm();
 }
 
 /**
@@ -344,7 +350,7 @@ void Adjalarm_adj_down(){
  * 
  */
 void Adjalarm_change_state(){
-    R_aisON == 0?1:0;
+    R_aisON = R_aisON == 0?1:0;
     switch (R_aisON){
         case 1: break;
         case 0: break;
@@ -353,7 +359,7 @@ void Adjalarm_change_state(){
 }
 
 E_adjust_pos Adjalarm_change_adj(E_adjust_pos adj_pos){
-    adj_pos = ad_H?ad_M:ad_H;
+    adj_pos = adj_pos == ad_H?ad_M:ad_H;
 
     return adj_pos;
 }
@@ -363,10 +369,10 @@ E_adjust_pos Adjalarm_change_adj(E_adjust_pos adj_pos){
  * 
  */
 void Adjalarm_lint_alarm(){
-    R_aHours > 24? 0:R_aHours;
-    R_aMinutes >= 60? 0:R_aMinutes;
-    R_aHours < 0? 0:R_aHours;
-    R_aMinutes < 0? 0:R_aMinutes;
+    R_aHours = R_aHours > 24? 0:R_aHours;
+    R_aMinutes = R_aMinutes >= 60? 0:R_aMinutes;
+    R_aHours  = R_aHours < 0? 0:R_aHours;
+    R_aMinutes = R_aMinutes< 0? 0:R_aMinutes;
 }
 
 /**
@@ -404,7 +410,7 @@ void Timer_lint(){
         R_tMilliseconds = 0;
         R_tSeconds += 1;
     }
-    R_tSeconds > 59? 0:R_tSeconds;
+    R_tSeconds = R_tSeconds > 59? 0:R_tSeconds;
 }
 // /**
 //  * @brief return next bit select value for digital Tube
@@ -428,7 +434,7 @@ void Timer_lint(){
 void Display_setbuf_by_mode(){
     switch (R_workmode){
         case wmode_clock:    Clock_lint_time();   break;
-        case wmode_timer;  Timer_lint(); break;
+			case wmode_timer: Timer_lint(); break;
     }
 
     switch (R_displaymode){
@@ -503,15 +509,20 @@ void Display_transfer_code(){
 }
 
 void Beep(){
-    BEEP = ~BEEP;
+	if(BEEP == 1){
+        BEEP = 0; 
+    }else{
+        BEEP = 1;
+    }
     delay(50);
 }
 
 void blink(){
-    
+
 }
 
 void Clock_clockwalk() interrupt 1{
+    E_keycls tmp = Nak;
     TH0 = 0xdc; 
     TL0 = 0x00; 
     R_10ms_counter++;
@@ -523,6 +534,15 @@ void Clock_clockwalk() interrupt 1{
     if (R_tisON){
         R_tMilliseconds += 1;
     }
-    R_key = Input_transfer_key();
+
+    tmp = Input_transfer_key(KEYINPUT);
+    if(R_keypressed == Nak){
+        R_keypressed = tmp;
+    }else if(R_keypressed == tmp){
+        R_key = R_keypressed;
+        R_keypressed = Nak;
+    }else{
+        R_keypressed = Nak;
+    }
 
 }
