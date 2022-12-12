@@ -214,7 +214,7 @@ void Input_key_map(){
         case wmode_clock:
             switch (R_key)
             {
-                case key_f1:    R_displaymode = R_displaymode == H_M?M_S:H_M;   break;
+                case key_f1:    P1 = 1; R_displaymode = R_displaymode == H_M?M_S:H_M;   break;
                 case key_f2:    R_workmode = wmode_clock_adjust;    break;
                 case key_f3:
                     if(R_aonAlarm){
@@ -536,13 +536,15 @@ void Clock_clockwalk() interrupt 1{
     }
 
     tmp = Input_transfer_key(KEYINPUT);
-    if(R_keypressed == Nak){
-        R_keypressed = tmp;
-    }else if(R_keypressed == tmp){
-        R_key = R_keypressed;
-        R_keypressed = Nak;
-    }else{
-        R_keypressed = Nak;
+    if(tmp != Nak){
+        if(R_keypressed == Nak){
+            R_keypressed = tmp;
+        }else if(R_keypressed == tmp){
+            R_key = R_keypressed;
+            R_keypressed = Nak;
+        }else{
+            R_keypressed = Nak;
+        }
     }
 
 }
