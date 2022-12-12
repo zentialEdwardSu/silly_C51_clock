@@ -71,6 +71,11 @@ E_adjust_pos Adjclock_change_adj(E_adjust_pos cadj_pos);
 void Adjclock_adj_up();
 void Adjclock_adj_down();
 
+void Adjalarm_lint_alarm();
+void Adjalarm_adj_down();
+void Adjalarm_adj_up();
+E_adjust_pos Adjalarm_change_adj(E_adjust_pos adj_pos);
+
 uchar code distab[23] ={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0x88,0x83,0xC6,0xA1,0x86,0x8E,0x8C,0xC1,0xCE,0x91,0x89,0xC7,0xFF};
 uchar code bit_select_map[4] = { 0x8f,0x4f,0x2f,0x1f};
 
@@ -195,16 +200,16 @@ void Input_key_map(){
             {
                 case key_f1:    R_adjustpos = Adjclock_change_adj(R_adjustpos); break;
                 case key_f2:    Adjclock_adj_up();  break;
-                case key_f3:    Adjclock_adj_up();  break;
+                case key_f3:    Adjclock_adj_down();  break;
                 case key_f4:    R_workmode = wmode_clock;   break;
             }
             break;
         case wmode_alram_adjust:
             switch (R_key)
             {
-                case key_f1:    R_adjustpos = Adjclock_change_adj(R_adjustpos); break;
-                case key_f2:    break;
-                case key_f3:    break;
+                case key_f1:    R_adjustpos = Adjalarm_change_adj(R_adjustpos); break;
+                case key_f2:    Adjclock_adj_up()break;
+                case key_f3:    Adjclock_adj_down();break;
                 case key_f4:    R_workmode = wmode_clock;   break;
                 
             }
@@ -225,6 +230,7 @@ void Input_key_map(){
             }
             
     }
+    R_key = Nak;
 }
 
 /**
@@ -258,6 +264,7 @@ void Clock_lint_time(){
 E_adjust_pos Adjclock_change_adj(E_adjust_pos cadj_pos){
     ++cadj_pos > ad_S?ad_H:cadj_pos;
     if(cadj_pos >= ad_M) R_displaymode = M_S;
+    if(cadj_pos < ad_M) R_displaymode = H_M;
 
     return cadj_pos;
 }
@@ -275,7 +282,7 @@ void Adjclock_adj_up(){
     Clock_lint_time();
 }
 /**
- * @brief minus one to current adjust_pos
+ * @brief minus one to current adjust_pos clock
  * 
  */
 void Adjclock_adj_down(){
@@ -285,6 +292,44 @@ void Adjclock_adj_down(){
         case ad_S: R_cSeconds--;break;
     }
     Clock_lint_time();
+}
+
+/**
+ * @brief minus one to current adjust_pos alarm
+ * 
+ */
+void Adjalarm_adj_up(){
+    switch(R_adjust_pos){
+        case ad_H: R_aHours++;break;
+        case ad_M: R_aMinutes++;break;
+    }
+}
+
+/**
+ * @brief add one to current adjust_pos alarm
+ * 
+ */
+void Adjalarm_adj_down(){
+    switch(R_adjust_pos){
+        case ad_H: R_aHours--;break;
+        case ad_M: R_aMinutes--;break;
+    }
+}
+
+E_adjust_pos Adjalarm_change_adj(E_adjust_pos adj_pos){
+    adj_pos = ad_H?ad_M:ad_H;
+    return adj_pos;
+}
+
+/**
+ * @brief linter for alarm
+ * 
+ */
+void Adjalarm_lint_alarm(){
+    R_aHours >= 60? 0:R_aHours;
+    R_aMinutes >=60? 0:R_aMinutes;
+    R_aHours < 0? 0:R_aHours;
+    R_aMinutes < 0? 0:R_aMinutes;
 }
 // /**
 //  * @brief return next bit select value for digital Tube
