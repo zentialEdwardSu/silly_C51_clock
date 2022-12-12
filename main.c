@@ -134,7 +134,7 @@ int main(){
         if(R_aisON && R_aMinutes == R_cMinutes && R_aHours == R_cHours)   R_aonAlarm=1;
 		
         switch(R_workmode){
-            case wmode_clock: R_displaymode = H_M; break;
+            case wmode_clock: break;
             case wmode_timer: R_displaymode = Timer;   break;
             case wmode_alram_adjust: R_adjustpos = ad_Nad; break;
             case wmode_clock_adjust: R_adjustpos = ad_Nad; break;
@@ -170,6 +170,11 @@ void init(){
     TL0 = 0x00; 
     ET0 = 1;
     TR0 = 1;//start
+    //T1 power key sacan
+    TH1 = 254;
+    TL1 = 254;
+    ET1 = 1;
+    TR1 = 1;//
 
 }
 
@@ -182,10 +187,10 @@ void init(){
 E_keycls Input_transfer_key(uchar key){
     key = key & 0x3c; // high 5
     switch (key){
-        case 0x1c:  return key_f1;    break;
-        case 0x2c:  return key_f2;    break;
-        case 0x34:  return key_f3;    break;
-        case 0x38:  return key_f4;    break;
+        case 0x1c:  return key_f4;    break;
+        case 0x2c:  return key_f3;    break;
+        case 0x34:  return key_f2;    break;
+        case 0x38:  return key_f1;    break;
         default :   return Nak;   break;   
     }
 }
@@ -214,7 +219,7 @@ void Input_key_map(){
         case wmode_clock:
             switch (R_key)
             {
-                case key_f1:    P1 = 1; R_displaymode = R_displaymode == H_M?M_S:H_M;   break;
+                case key_f1:    R_displaymode = R_displaymode == H_M?M_S:H_M;   break;
                 case key_f2:    R_workmode = wmode_clock_adjust;    break;
                 case key_f3:
                     if(R_aonAlarm){
@@ -522,7 +527,6 @@ void blink(){
 }
 
 void Clock_clockwalk() interrupt 1{
-    E_keycls tmp = Nak;
     TH0 = 0xdc; 
     TL0 = 0x00; 
     R_10ms_counter++;
@@ -534,7 +538,10 @@ void Clock_clockwalk() interrupt 1{
     if (R_tisON){
         R_tMilliseconds += 1;
     }
+}
 
+void power_sacan() interrupt 3{
+    E_keycls tmp = Nak;
     tmp = Input_transfer_key(KEYINPUT);
     if(tmp != Nak){
         if(R_keypressed == Nak){
