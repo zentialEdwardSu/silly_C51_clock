@@ -89,7 +89,7 @@ uchar code distab[23] ={
 };
 uchar code bit_select_map[4] = { 0x8f,0x4f,0x2f,0x1f};
 
-const uchar C_fixtime = 0x00;// wmode_clock correction factor
+const uchar C_fixtime = 0x12;// wmode_clock correction factor
 
 uchar R_10ms_counter = 0; // 10ms counter powered by T0 
 uchar R_galarm_isOn = 0; //global alarm enable flag
@@ -103,8 +103,8 @@ E_workmode R_workmode = wmode_clock;// workmode
 // S_currenttime R_currenttime = ZEROCLOCK; // Hold runtime wmode_clock data (Init form 00:00:00)
 
 uchar R_cHours = 0; // current time hour
-uchar R_cMinutes = 59; // current time Minutes
-uchar R_cSeconds = 55; // current time Seconds
+uchar R_cMinutes = 0; // current time Minutes
+uchar R_cSeconds = 0; // current time Seconds
 
 uchar R_tSeconds = 0; // wmode_timer time seconds
 uchar R_tMilliseconds = 0; // wmode_timer time mileseconds
@@ -238,7 +238,7 @@ void Input_key_map(){
                 case key_f1:    R_adjustpos = Adjclock_change_adj(R_adjustpos); break;
                 case key_f2:    Adjclock_adj_up();  break;
                 case key_f3:    Adjclock_adj_down();  break;
-                case key_f4:    R_workmode = wmode_clock;   break;
+                case key_f4:    R_workmode = wmode_clock;   R_displaymode = H_M;    break;
             }
             break;
         case wmode_alram_adjust:
@@ -247,7 +247,7 @@ void Input_key_map(){
                 case key_f1:    R_adjustpos = Adjalarm_change_adj(R_adjustpos); break;
                 case key_f2:    Adjalarm_adj_up();	break;
                 case key_f3:    Adjalarm_change_state();break;
-                case key_f4:    R_workmode = wmode_clock;   break;
+                case key_f4:    R_workmode = wmode_clock;   R_displaymode = H_M;    break;
                 
             }
             break;
@@ -257,7 +257,7 @@ void Input_key_map(){
                 case key_f1:    Timer_start(); break;
                 case key_f2:    Timer_pause(); break;
                 case key_f3:    Timer_reset(); break;
-                case key_f4:    R_workmode = wmode_clock;   break;
+                case key_f4:    R_workmode = wmode_clock;   R_displaymode = H_M; break;
             }
             
     }
@@ -528,7 +528,7 @@ void blink(){
 
 void Clock_clockwalk() interrupt 1{
     TH0 = 0xdc; 
-    TL0 = 0x00; 
+    TL0 = 0x00 + C_fixtime; 
     R_10ms_counter++;
     if(R_10ms_counter >= 100){
         R_10ms_counter = 0;
