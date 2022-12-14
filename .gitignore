@@ -4,3 +4,4 @@ Objects
 *.uvopt
 *.uvgui.*
 *.uvproj
+*.lst
