@@ -1,4 +1,14 @@
-#include<reg51.h>
+/**
+ * @file main.c
+ * @author EdwardSu(zentialeds@gmail.com)
+ * @brief silly clock on AT89C51
+ * @version 0.1-beta
+ * @date 2022-12-14
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+#include <reg51.h>
 #include <intrins.h> 
 
 #define uchar unsigned char
@@ -112,7 +122,7 @@ uchar R_tMilliseconds = 0; // wmode_timer time mileseconds
 uchar R_aHours = 0; // seted alarm hour
 uchar R_aMinutes = 0; // seted alarm minutes
 uchar R_aisON = 0; // is alarm enable
-uchar R_display_tips = 0; // display on/off tips
+uchar R_adisplay_tips = 0; // display on/off tips
 uchar R_aonAlarm = 0; // is on alarm 
 
 uchar R_tpressed_count = 0; // *Unused start/stop or set zero
@@ -134,10 +144,10 @@ int main(){
         if(R_aisON && R_aMinutes == R_cMinutes && R_aHours == R_cHours)   R_aonAlarm=1;
 		
         switch(R_workmode){
-            case wmode_clock: break;
+            case wmode_clock: TR0 = 1;  break;
             case wmode_timer: R_displaymode = Timer;   break;
             case wmode_alram_adjust: R_adjustpos = ad_Nad; break;
-            case wmode_clock_adjust: R_adjustpos = ad_Nad; break;
+            case wmode_clock_adjust: R_adjustpos = ad_Nad; TR0 = 0; break;
         }
         Input_key_map();
         Display_Display();
@@ -197,7 +207,7 @@ E_keycls Input_transfer_key(uchar key){
 
 /**
  * @brief Get the key pressed
- * 
+ * @bug Unused
  * @return E_keycls 
  */
 E_keycls Input_get_key(){
