@@ -1,3 +1,6 @@
-- [ ] LED 
+- [X] LED 
 - [X] Main clock 10ms
-- [ ] funckey
+- [X] funckey
+- [ ] fix bug come with Time adjust
+- [ ] make alarm work
+- [ ] blink adjust pos
