@@ -133,7 +133,7 @@ uchar R_tisON = 0;// control timer
 
 uchar R_isblink = 0;// if blink before
 uchar R_500ms_counter = 0; // counter for 0.5s
-uchar R_ontimebeep_counter = 0; // counter for beep times
+uchar R_ontimebeep_counter = -1; // counter for beep times
 
 sbit BEEP = P2^0;
 
@@ -615,7 +615,7 @@ void Clock_clockwalk() interrupt 1{
         if(R_adjustpos != ad_Nad){
             R_isblink = R_isblink ==0?1:0;
         }
-        if(R_ontimebeep_counter){
+        if(R_ontimebeep_counter >= 0 && R_workmode != wmode_clock_adjust){
             Beep();
             R_ontimebeep_counter-=1;
         }
