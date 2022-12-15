@@ -156,7 +156,7 @@ int main(){
                 R_displaymode = H_M; 
                 R_adjustpos = R_adjustpos == ad_Nad?ad_H:R_adjustpos;
                 break;
-            case wmode_clock_adjust: R_adjustpos = ad_H; TR0 = 0; break;
+            case wmode_clock_adjust: break;
         }
         Input_key_map();
         Display_Display();
@@ -484,8 +484,8 @@ void Timer_lint(){
  */
 void Display_setbuf_by_mode(){
     switch (R_workmode){
-        case wmode_clock:    Clock_lint_time();   break;
-			case wmode_timer: Timer_lint(); break;
+        case wmode_clock:       Clock_lint_time();      break;
+		case wmode_timer:       Timer_lint();   break;
     }
 
     switch (R_displaymode){
@@ -569,7 +569,7 @@ void Beep(){
     }else{
         BEEP = 1;
     }
-    delay(50);
+    // delay(50);
 }
 
 /**
@@ -605,7 +605,7 @@ void Clock_clockwalk() interrupt 1{
     TL0 = 0x00 + C_fixtime; 
     R_10ms_counter++;
     R_500ms_counter++;
-    if(R_10ms_counter >= 100){
+    if(R_10ms_counter >= 100 && R_workmode != wmode_clock_adjust){
         R_10ms_counter = 0;
         R_cSeconds++;
         Clock_lint_time();
@@ -618,6 +618,9 @@ void Clock_clockwalk() interrupt 1{
         if(R_ontimebeep_counter){
             Beep();
             R_ontimebeep_counter-=1;
+        }
+        if(R_aonAlarm && !R_ontimebeep_counter){
+            Beep();
         }
         R_adisplay_tips = R_adisplay_tips == 1?0:0;
     }
