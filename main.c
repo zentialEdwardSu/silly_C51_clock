@@ -318,6 +318,7 @@ void Clock_lint_time(){
  * 
  * @param cadj_pos 
  * @return E_adjust_pos 
+ * @bug 
  */
 E_adjust_pos Adjclock_change_adj(E_adjust_pos cadj_pos){
     cadj_pos++;
@@ -391,13 +392,13 @@ void Adjalarm_change_state(){
  * 
  */
 void Display_aison_tips(){
-    R_adisplay_tips = 0;
+    //R_adisplay_tips = 0;
     R_ledbuffer[0] = 0xff;
     R_ledbuffer[3] = 0xff;
     R_ledbuffer[1] = distab[12];
     switch(R_aisON){
-        case 1:     R_ledbuffer = distab[1];    break;
-        case 2:     R_ledbuffer = distab[0];    break;
+        case 1:     R_ledbuffer[2] = distab[1];    break;
+        case 0:     R_ledbuffer[2] = distab[0];    break;
     }
 }
 
@@ -529,6 +530,9 @@ void Display_Display(){
     uchar i; 
     Display_transfer_code();
     Display_blink();
+    if(R_adisplay_tips){
+        Display_aison_tips();
+    }
     for (i = 0;i < 4;i++){
         Display_setLatches();
         LEDOUT = R_ledbuffer[i];
@@ -615,6 +619,7 @@ void Clock_clockwalk() interrupt 1{
             Beep();
             R_ontimebeep_counter-=1;
         }
+        R_adisplay_tips = R_adisplay_tips == 1?0:0;
     }
     if (R_tisON){
         R_tMilliseconds += 1;
