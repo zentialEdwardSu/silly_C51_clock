@@ -490,16 +490,16 @@ void Display_setbuf_by_mode(){
 
     switch (R_displaymode){
         case H_M:
-            if(R_workmode == wmode_clock){
-                R_ledbuffer[0] = R_cHours/10;
-                R_ledbuffer[1] = R_cHours%10;
-                R_ledbuffer[2] = R_cMinutes/10;
-                R_ledbuffer[3] = R_cMinutes%10;
-            }else if(R_workmode == wmode_alram_adjust){
+            if(R_workmode == wmode_alram_adjust){
                 R_ledbuffer[0] = R_aHours/10;
                 R_ledbuffer[1] = R_aHours%10;
                 R_ledbuffer[2] = R_aMinutes/10;
                 R_ledbuffer[3] = R_aMinutes%10;
+            }else{
+                R_ledbuffer[0] = R_cHours/10;
+                R_ledbuffer[1] = R_cHours%10;
+                R_ledbuffer[2] = R_cMinutes/10;
+                R_ledbuffer[3] = R_cMinutes%10;
             }
             break;
         case M_S:
