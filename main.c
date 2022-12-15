@@ -239,7 +239,7 @@ void Input_key_map(){
             switch (R_key)
             {
                 case key_f1:    R_displaymode = R_displaymode == H_M?M_S:H_M;   break;
-                case key_f2:    R_workmode = wmode_clock_adjust;    break;
+                case key_f2:    R_workmode = wmode_clock_adjust;    R_adjustpos = ad_H; break;
                 case key_f3:
                     if(R_aonAlarm){
                         R_aonAlarm = 0; //stop beeeeep when on alarm
