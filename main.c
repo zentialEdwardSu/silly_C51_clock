@@ -75,6 +75,8 @@ void Display_Display();
 void Display_setbuf_by_mode();
 void Display_setLatches();
 void Display_transfer_code();
+void Display_blink();
+void Display_aison_tips();
 E_keycls Input_transfer_key(uchar key);
 E_keycls Input_get_key();
 void Input_key_map();
@@ -112,15 +114,15 @@ E_adjust_pos R_adjustpos = ad_Nad; // adjust position
 E_workmode R_workmode = wmode_clock;// workmode 
 // S_currenttime R_currenttime = ZEROCLOCK; // Hold runtime wmode_clock data (Init form 00:00:00)
 
-uchar R_cHours = 0; // current time hour
-uchar R_cMinutes = 0; // current time Minutes
-uchar R_cSeconds = 0; // current time Seconds
+uchar R_cHours = 10; // current time hour
+uchar R_cMinutes = 59; // current time Minutes
+uchar R_cSeconds = 50; // current time Seconds
 
 uchar R_tSeconds = 0; // wmode_timer time seconds
 uchar R_tMilliseconds = 0; // wmode_timer time mileseconds
 // S_alarm R_alarm[8] = {ZEROALARM}; // Hold runtime alarm groupInit as no wmode_clock
-uchar R_aHours = 0; // seted alarm hour
-uchar R_aMinutes = 0; // seted alarm minutes
+uchar R_aHours = 11; // seted alarm hour
+uchar R_aMinutes = 1; // seted alarm minutes
 uchar R_aisON = 0; // is alarm enable
 uchar R_adisplay_tips = 0; // display on/off tips
 uchar R_aonAlarm = 0; // is on alarm 
@@ -128,6 +130,10 @@ uchar R_aonAlarm = 0; // is on alarm
 uchar R_tpressed_count = 0; // *Unused start/stop or set zero
 uchar R_tisON = 0;// control timer
 // uchar T_ex_seconds = 0; // external counter for seconds
+
+uchar R_isblink = 0;// if blink before
+uchar R_500ms_counter = 0; // counter for 0.5s
+uchar R_ontimebeep_counter = 0; // counter for beep times
 
 sbit BEEP = P2^0;
 
@@ -138,7 +144,7 @@ int main(){
     while (1){
 
         Display_setbuf_by_mode();
-        if(R_aonAlarm){
+        if(R_aonAlarm && !R_ontimebeep_counter){
             Beep();
         }
         if(R_aisON && R_aMinutes == R_cMinutes && R_aHours == R_cHours)   R_aonAlarm=1;
@@ -146,8 +152,11 @@ int main(){
         switch(R_workmode){
             case wmode_clock: TR0 = 1;  break;
             case wmode_timer: R_displaymode = Timer;   break;
-            case wmode_alram_adjust: R_adjustpos = ad_Nad; break;
-            case wmode_clock_adjust: R_adjustpos = ad_Nad; TR0 = 0; break;
+            case wmode_alram_adjust: 
+                R_displaymode = H_M; 
+                R_adjustpos = R_adjustpos == ad_Nad?ad_H:R_adjustpos;
+                break;
+            case wmode_clock_adjust: R_adjustpos = ad_H; TR0 = 0; break;
         }
         Input_key_map();
         Display_Display();
@@ -210,15 +219,15 @@ E_keycls Input_transfer_key(uchar key){
  * @bug Unused
  * @return E_keycls 
  */
-E_keycls Input_get_key(){
-    E_keycls key_tmp = Nak;
-    key_tmp = Input_transfer_key(KEYINPUT);
-    delay(10);
-    if (key_tmp == Input_transfer_key(KEYINPUT)){
-        return key_tmp;
-    }
-    return Nak;
-}
+// E_keycls Input_get_key(){
+//     E_keycls key_tmp = Nak;
+//     key_tmp = Input_transfer_key(KEYINPUT);
+//     delay(10);
+//     if (key_tmp == Input_transfer_key(KEYINPUT)){
+//         return key_tmp;
+//     }
+//     return Nak;
+// }
 
 /**
  * @brief mtach keymap for individual workmode
@@ -239,25 +248,31 @@ void Input_key_map(){
                     }
                     R_workmode = wmode_alram_adjust;    
                     break;
-                case key_f4:    R_workmode = wmode_timer;   break;
+                case key_f4:    R_adjustpos=ad_Nad;  R_workmode = wmode_timer;   break;
             }
             break;
         case wmode_clock_adjust:
             switch (R_key)
             {
-                case key_f1:    R_adjustpos = Adjclock_change_adj(R_adjustpos); break;
+                case key_f1:    
+                    R_adjustpos++;
+                    R_adjustpos = R_adjustpos > ad_S?ad_H:R_adjustpos;
+                    if(R_adjustpos >= ad_M) R_displaymode = M_S;
+                    if(R_adjustpos < ad_M) R_displaymode = H_M;
+                    
+                    break;
                 case key_f2:    Adjclock_adj_up();  break;
                 case key_f3:    Adjclock_adj_down();  break;
-                case key_f4:    R_workmode = wmode_clock;   R_displaymode = H_M;    break;
+                case key_f4:    R_adjustpos=ad_Nad; R_workmode = wmode_clock;   R_displaymode = H_M;    break;
             }
             break;
         case wmode_alram_adjust:
             switch (R_key)
             {
-                case key_f1:    R_adjustpos = Adjalarm_change_adj(R_adjustpos); break;
+                case key_f1:    R_adjustpos = R_adjustpos == ad_H?ad_M:ad_H; break;
                 case key_f2:    Adjalarm_adj_up();	break;
                 case key_f3:    Adjalarm_change_state();break;
-                case key_f4:    R_workmode = wmode_clock;   R_displaymode = H_M;    break;
+                case key_f4:    R_adjustpos=ad_Nad; R_workmode = wmode_clock;   R_displaymode = H_M;    break;
                 
             }
             break;
@@ -267,7 +282,7 @@ void Input_key_map(){
                 case key_f1:    Timer_start(); break;
                 case key_f2:    Timer_pause(); break;
                 case key_f3:    Timer_reset(); break;
-                case key_f4:    R_workmode = wmode_clock;   R_displaymode = H_M; break;
+                case key_f4:    R_adjustpos=ad_Nad; R_workmode = wmode_clock;   R_displaymode = H_M; break;
             }
             
     }
@@ -287,6 +302,8 @@ void Clock_lint_time(){
     if(R_cMinutes>=60){
         R_cMinutes = 0;
         R_cHours += 1;
+
+        R_ontimebeep_counter = R_cHours;
     }
     if(R_cHours >= 24){
         R_cHours = 0;
@@ -326,7 +343,7 @@ void Adjclock_adj_up(){
 /**
  * 
  * @brief minus one to current adjust_pos clock
- * @bug unused
+ * 
  */
 void Adjclock_adj_down(){
     switch(R_adjustpos){
@@ -351,14 +368,14 @@ void Adjalarm_adj_up(){
 
 /**
  * @brief add one to current adjust_pos alarm
- * 
+ * @bug unused
  */
-void Adjalarm_adj_down(){
-    switch(R_adjustpos){
-        case ad_H: R_aHours--;break;
-        case ad_M: R_aMinutes--;break;
-    }
-}
+// void Adjalarm_adj_down(){
+//     switch(R_adjustpos){
+//         case ad_H: R_aHours--;break;
+//         case ad_M: R_aMinutes--;break;
+//     }
+// }
 
 /**
  * @brief change clock state
@@ -366,18 +383,36 @@ void Adjalarm_adj_down(){
  */
 void Adjalarm_change_state(){
     R_aisON = R_aisON == 0?1:0;
-    switch (R_aisON){
-        case 1: break;
-        case 0: break;
-        //TODO add tip text to screen
+    R_adisplay_tips = 1;
+}
+
+/**
+ * @brief show alarm on/off tips
+ * 
+ */
+void Display_aison_tips(){
+    R_adisplay_tips = 0;
+    R_ledbuffer[0] = 0xff;
+    R_ledbuffer[3] = 0xff;
+    R_ledbuffer[1] = distab[12];
+    switch(R_aisON){
+        case 1:     R_ledbuffer = distab[1];    break;
+        case 2:     R_ledbuffer = distab[0];    break;
     }
 }
 
-E_adjust_pos Adjalarm_change_adj(E_adjust_pos adj_pos){
-    adj_pos = adj_pos == ad_H?ad_M:ad_H;
+/**
+ * @brief change adj pos for alarm adjust
+ * 
+ * @param adj_pos 
+ * @return E_adjust_pos 
+ * @bug unused
+ */
+// E_adjust_pos Adjalarm_change_adj(E_adjust_pos adj_pos){
+//     adj_pos = adj_pos == ad_H?ad_M:ad_H;
 
-    return adj_pos;
-}
+//     return adj_pos;
+// }
 
 /**
  * @brief linter for alarm
@@ -493,6 +528,7 @@ void Display_Display(){
     
     uchar i; 
     Display_transfer_code();
+    Display_blink();
     for (i = 0;i < 4;i++){
         Display_setLatches();
         LEDOUT = R_ledbuffer[i];
@@ -532,18 +568,53 @@ void Beep(){
     delay(50);
 }
 
-void blink(){
-
+/**
+ * @brief set ledbuff 0xff when 1 is enable
+ * 
+ */
+void Display_blink(){
+    if(R_isblink){
+        switch (R_adjustpos){
+            case ad_H:
+                R_ledbuffer[0] = 0xff;
+                R_ledbuffer[1] = 0xff;
+                break;
+            case ad_M:
+                if(R_displaymode == M_S){
+                    R_ledbuffer[0] = 0xff;
+                    R_ledbuffer[1] = 0xff;
+                }else{
+                    R_ledbuffer[2] = 0xff;
+                    R_ledbuffer[3] = 0xff;
+                }
+                break;
+            case ad_S:
+                R_ledbuffer[2] = 0xff;
+                R_ledbuffer[3] = 0xff;
+                break;
+        }
+    }
 }
 
 void Clock_clockwalk() interrupt 1{
     TH0 = 0xdc; 
     TL0 = 0x00 + C_fixtime; 
     R_10ms_counter++;
+    R_500ms_counter++;
     if(R_10ms_counter >= 100){
         R_10ms_counter = 0;
         R_cSeconds++;
         Clock_lint_time();
+    }
+    if(R_500ms_counter >= 50){
+        R_500ms_counter = 0;
+        if(R_adjustpos != ad_Nad){
+            R_isblink = R_isblink ==0?1:0;
+        }
+        if(R_ontimebeep_counter){
+            Beep();
+            R_ontimebeep_counter-=1;
+        }
     }
     if (R_tisON){
         R_tMilliseconds += 1;
@@ -552,6 +623,7 @@ void Clock_clockwalk() interrupt 1{
 
 void power_sacan() interrupt 3{
     E_keycls tmp = Nak;
+    KEYINPUT = 0xff;
     tmp = Input_transfer_key(KEYINPUT);
     if(tmp != Nak){
         if(R_keypressed == Nak){
